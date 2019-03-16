@@ -73,37 +73,40 @@ def readadc(adcnum, clockpin, mosipin, misopin, cspin):
 
 
 def getVoltage():
-try:
-    while True:
-        for adcnum in adcs:
-            # read the analog pin
-            adctot = 0
-            for i in range(reps):
-                read_adc = readadc(adcnum, SPICLK, SPIMOSI, SPIMISO, SPICS)
-                adctot += read_adc
-                time.sleep(0.05)
-            read_adc = adctot / reps / 1.0
-            print (read_adc)
-            print ("location 1")
+    try:
+        while True:
+            for adcnum in adcs:
+                # read the analog pin
+                adctot = 0
+                for i in range(reps):
+                    read_adc = readadc(adcnum, SPICLK, SPIMOSI, SPIMISO, SPICS)
+                    adctot += read_adc
+                    time.sleep(0.05)
+                read_adc = adctot / reps / 1.0
+                print (read_adc)
+                print ("location 1")
 
-            # convert analog reading to Volts = ADC * ( 3.33 / 1024 )
-            # 3.33 tweak according to the 3v3 measurement on the Pi
-            #volts = read_adc * ( 3.1 / 1024.0)
-            volts = read_adc * ( 3.1 / 1024.0 ) * 5.0470403175
-            voltstring = str(volts)[0:5]
-            print ("Battery Voltage: %.2f" % volts)
-            # put safeguards in here so that it takes 2 or 3 successive readings
-            if volts <= cutoff and previous_voltage <= cutoff:
-                # initiate shutdown process
-                print ("OK. Syncing file system, then we're shutting down.")
-                command = os.system("sync")
-                if command == 0:
-                    command = "/usr/bin/sudo /sbin/shutdown now"
-                    #process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-                    #output = process.communicate()[0]
-                    #print output
-            previous_voltage = volts               
-        time.sleep(time_between_readings)
+                # convert analog reading to Volts = ADC * ( 3.33 / 1024 )
+                # 3.33 tweak according to the 3v3 measurement on the Pi
+                #volts = read_adc * ( 3.1 / 1024.0)
+                volts = read_adc * ( 3.1 / 1024.0 ) * 5.0470403175
+                voltstring = str(volts)[0:5]
+                print ("Battery Voltage: %.2f" % volts)
+                # put safeguards in here so that it takes 2 or 3 successive readings
+                if volts <= cutoff and previous_voltage <= cutoff:
+                    # initiate shutdown process
+                    print ("OK. Syncing file system, then we're shutting down.")
+                    command = os.system("sync")
+                    if command == 0:
+                        command = "/usr/bin/sudo /sbin/shutdown now"
+                        #process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+                        #output = process.communicate()[0]
+                        #print output
+                previous_voltage = volts
+            time.sleep(time_between_readings)
+    except:
+        print ("Could not get voltage")
+
 
 def main():
     getVoltage()
@@ -114,7 +117,7 @@ if __name__ == '__main__':
         main()
     except KeyboardInterrupt:
         print("\nShuting down RFID antenna")
-        GPIO.cleanup() #Will need this when we implement LEDs
+        GPIO.cleanup()
         sys.exit(0)
 
 

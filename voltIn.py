@@ -71,6 +71,8 @@ def readadc(adcnum, clockpin, mosipin, misopin, cspin):
     adcout /= 2       # first bit is 'null' so drop it
     return adcout
 
+
+def getVoltage():
 try:
     while True:
         for adcnum in adcs:
@@ -81,19 +83,19 @@ try:
                 adctot += read_adc
                 time.sleep(0.05)
             read_adc = adctot / reps / 1.0
-            print read_adc
-            print "location 1"
+            print (read_adc)
+            print ("location 1")
 
             # convert analog reading to Volts = ADC * ( 3.33 / 1024 )
             # 3.33 tweak according to the 3v3 measurement on the Pi
             #volts = read_adc * ( 3.1 / 1024.0)
             volts = read_adc * ( 3.1 / 1024.0 ) * 5.0470403175
             voltstring = str(volts)[0:5]
-            print "Battery Voltage: %.2f" % volts
+            print ("Battery Voltage: %.2f" % volts)
             # put safeguards in here so that it takes 2 or 3 successive readings
             if volts <= cutoff and previous_voltage <= cutoff:
                 # initiate shutdown process
-                print "OK. Syncing file system, then we're shutting down."
+                print ("OK. Syncing file system, then we're shutting down.")
                 command = os.system("sync")
                 if command == 0:
                     command = "/usr/bin/sudo /sbin/shutdown now"
@@ -103,7 +105,20 @@ try:
             previous_voltage = volts               
         time.sleep(time_between_readings)
 
-except KeyboardInterrupt:             # trap a CTRL+C keyboard interrupt
+def main():
+    getVoltage()
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nShuting down RFID antenna")
+        GPIO.cleanup() #Will need this when we implement LEDs
+        sys.exit(0)
+
+
+'''except KeyboardInterrupt:
     GPIO.cleanup()
     time.sleep(5)
-GPIO.cleanup()
+GPIO.cleanup()'''

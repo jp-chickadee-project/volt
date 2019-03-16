@@ -5,7 +5,6 @@
 import time
 import os
 import subprocess
-import smtplib
 import string
 import RPi.GPIO as GPIO
 from time import gmtime, strftime
@@ -14,21 +13,20 @@ GPIO.setmode(GPIO.BCM)
 
 
 ########## Program variables you might want to tweak ###########################
-# voltage divider connected to channel 0 of mcp3002
-adcs = [0] # 0 battery voltage divider
+adcs = [0] # 0 which port the voltage divider is connectd to the mpc3002
 reps = 10 # how many times to take each measurement for averaging
 cutoff = 12 # cutoff voltage for the battery
 previous_voltage = cutoff + 1 # initial value
 time_between_readings = 10 # seconds between clusters of readings
 
 # Define Pins/Ports
-SPICLK = 8             # FOUR SPI ports on the ADC 
+SPICLK = 8
 SPIMISO = 22
 SPIMOSI = 16
 SPICS = 27
 
 #Set up ports
-GPIO.setup(SPIMOSI, GPIO.OUT)       # set up the SPI interface pins
+GPIO.setup(SPIMOSI, GPIO.OUT)
 GPIO.setup(SPIMISO, GPIO.IN)
 GPIO.setup(SPICLK, GPIO.OUT)
 GPIO.setup(SPICS, GPIO.OUT)
@@ -40,9 +38,9 @@ GPIO.setup(SPICS, GPIO.OUT)
 # this uses a bitbang method rather than Pi hardware spi
 # modified code based on an adafruit example for mcp3008
 def readadc(adcnum, clockpin, mosipin, misopin, cspin):
-    if ((adcnum > 1) or (adcnum < 0)):
+    if adcnum > 1 or adcnum < 0:
         return -1
-    if (adcnum == 0):
+    if adcnum == 0:
         commandout = 0x6
     else:
         commandout = 0x7
@@ -52,7 +50,7 @@ def readadc(adcnum, clockpin, mosipin, misopin, cspin):
     GPIO.output(cspin, False)     # bring CS low
     commandout <<= 5    # we only need to send 3 bits here
     for i in range(3):
-        if (commandout & 0x80):
+        if commandout & 0x80:
             GPIO.output(mosipin, True)
         else:   
             GPIO.output(mosipin, False)

@@ -1,12 +1,14 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 # http://raspi.tv/2013/controlled-shutdown-duration-test-of-pi-model-a-with-2-cell-lipo
 # DO NOT use this script without a Voltage divider or other means of 
 # reducing battery voltage to the ADC.
 import time
 import os
+import sys
 import subprocess
 import string
 import RPi.GPIO as GPIO
+from datetime import datetime
 from time import gmtime, strftime
 
 GPIO.setmode(GPIO.BCM)
@@ -73,6 +75,24 @@ def readadc(adcnum, clockpin, mosipin, misopin, cspin):
 
 
 def getVoltage():
+    try:
+        for adcnum in adcs:
+            adctot = 0
+            for i in range(reps):
+                read_adc = readadc(adcnum, SPICLK, SPIMOSI, SPIMISO, SPICS)
+                adctot += read_adc
+                time.sleep(0.05)
+            read_adc = adctot / reps / 1.0
+
+        volts = (1.41 / 93.4) * read_adc + .0195289079
+        GPIO.cleanup()
+        return round(volts, 2)
+    except:
+        GPIO.cleanup()
+        print("Could not get volts")
+
+
+def getVoltage2():
     try:    
         for adcnum in adcs:
             # read the analog pin
@@ -88,7 +108,10 @@ def getVoltage():
             # convert analog reading to Volts = ADC * ( 3.33 / 1024 )
             # 3.33 tweak according to the 3v3 measurement on the Pi
             #volts = read_adc * ( 3.1 / 1024.0)
-            volts = read_adc * ( 3.1 / 1024.0 ) * 5.0470403175
+            #print(read_adc)
+            #print((1.41/93.4) * read_adc + .0195289079)
+            #volts = read_adc * ( 3.1 / 1024.0 ) * 5.0470403175
+            volts = (1.41 / 93.4) * read_adc + .0195289079
             voltstring = str(volts)[0:5]
             #print ("Battery Voltage: %.2f" % volts)
             # put safeguards in here so that it takes 2 or 3 successive readings
@@ -97,7 +120,7 @@ def getVoltage():
                 print ("OK. Syncing file system, then we're shutting down.")
                 command = os.system("sync")
                 if command == 0:
-                    command = "/usr/bin/sudo /sbin/shutdown now"
+                    command = "/us/bin/sudo /sbin/shutdown now"
                     #process = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
                     #output = process.communicate()[0]
                     #print output'''
@@ -108,9 +131,18 @@ def getVoltage():
         print ("Could not get voltage")
 
 
-def main():
-    return getVoltage()
+def logVoltage(voltage):
+    logOut = open("voltageLog.out", "a")
+    logOut.write("%s" % (voltage))
+    logOut.write(" %s" % (datetime.fromtimestamp(time.time())))
+    logOut.write('\n')
 
+
+def main():
+    logVoltage(getVoltage2())
+    logVoltage(getVoltage())
+    GPIO.cleanup()
+    sys.exit(0)
 
 if __name__ == '__main__':
     try:
